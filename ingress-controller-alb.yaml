@@ -831,7 +831,7 @@ spec:
           args:
             - --cluster-name=dev-eks
             - --ingress-class=alb
-            - --aws-vpc-id=vpc-03ed69741ccb1d9c7
+            - --aws-vpc-id=vpc-03ed69741ccb1d9c7 #add your vpc ID
             - --aws-region=eu-north-1
           ports:
             - containerPort: 9443
