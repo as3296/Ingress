@@ -1,0 +1,47 @@
+In controller ERRORS - Crashloopbackoff
+C:\Users\sraav\Desktop\INGRESS>kubectl get pods -n kube-system
+NAME                                            READY   STATUS             RESTARTS         AGE
+aws-load-balancer-controller-7b47d74f75-f56sw   0/1     CrashLoopBackOff   49 (3m42s ago)   3h54m
+aws-node-h9rfm                                  2/2     Running            0                4h41m
+aws-node-m7jgs                                  2/2     Running            0                4h41m
+coredns-7cb476cb59-szcbb                        1/1     Running            0                4h43m
+coredns-7cb476cb59-wtgb8                        1/1     Running            0                4h43m
+eks-node-monitoring-agent-q27x6                 1/1     Running            0                4h41m
+eks-node-monitoring-agent-t6dp4                 1/1     Running            0                4h41m
+eks-pod-identity-agent-9dm5p                    1/1     Running            0                4h41m
+eks-pod-identity-agent-dvdvv                    1/1     Running            0                4h41m
+kube-proxy-bq9hc                                1/1     Running            0                4h41m
+kube-proxy-vc9cg                                1/1     Running            0                4h41m
+metrics-server-5786d9869c-4qmtj                 1/1     Running            0                4h43m
+metrics-server-5786d9869c-6nwt2                 1/1     Running            0                4h43m
+
+C:\Users\sraav\Desktop\INGRESS>kubectl logs -n kube-system aws-load-balancer-controller-7b47d74f75-f56sw
+{"level":"info","ts":"2025-10-04T14:20:16Z","msg":"version","GitVersion":"v2.14.0","GitCommit":"d847890e67b4c3a78f230bd7f7caf2bfcab01df1","BuildDate":"2025-10-02T19:02:22+0000"}
+{"level":"error","ts":"2025-10-04T14:20:21Z","logger":"setup","msg":"unable to initialize AWS cloud","error":"failed to get VPC ID: failed to fetch VPC ID from instance metadata: error in fetching vpc id through ec2 metadata: get mac metadata: operation error ec2imds: GetMetadata, canceled, context deadline exceeded"}
+
+C:\Users\sraav\Desktop\INGRESS>kubectl apply -f ingress-controller-alb.yaml
+customresourcedefinition.apiextensions.k8s.io/ingressclassparams.elbv2.k8s.aws configured
+customresourcedefinition.apiextensions.k8s.io/targetgroupbindings.elbv2.k8s.aws configured
+serviceaccount/aws-load-balancer-controller unchanged
+role.rbac.authorization.k8s.io/aws-load-balancer-controller-leader-election-role unchanged
+clusterrole.rbac.authorization.k8s.io/aws-load-balancer-controller-role configured
+rolebinding.rbac.authorization.k8s.io/aws-load-balancer-controller-leader-election-rolebinding unchanged
+clusterrolebinding.rbac.authorization.k8s.io/aws-load-balancer-controller-rolebinding unchanged
+service/aws-load-balancer-webhook-service unchanged
+error: error parsing ingress-controller-alb.yaml: error converting YAML to JSON: yaml: line 24: did not find expected key
+
+
+
+SOLUTION: GIVE VPC ID IN ingress-controller-alb.yaml
+
+
+ERROR: en: User \"system:serviceaccount:kube-system:aws-load-balancer-controller\" cannot get resource \"leases\" in API group \"coordination.k8s.io\" in the namespace \"kube-system\"","errorError":"PANIC=runtime error: invalid memory address or nil pointer dereference"}
+{"level":"error","ts":"2025-10-04T14:39:09Z","msg":"error retrieving resource lock kube-system/aws-load-balancer-controller-leader: leases.coordination.k8s.io \"aws-load-balancer-controller-leader\" is forbidden: User \"system:serviceaccount:kube-system:aws-load-balancer-controller\" cannot get resource \"leases\" in API group \"coordination.k8s.io\" in the namespace \"kube-system\"","errorError":"PANIC=runtime error: invalid memory address or nil pointer dereference"}
+{"level":"error","ts":"2025-10-04T14:39:12Z","msg":"error retrieving resource lock kube-system/aws-load-balancer-controller-leader: leases.coordination.k8s.io \"aws-load-balancer-controller-leader\" is forbidden: User \"system:serviceaccount:kube-system:aws-load-balancer-controller\" cannot get resource \"leases\" in API group \"coordination.k8s.io\" in the namespace \"kube-system\"","errorError":"PANIC=runtime error: invalid memory address or nil pointer dereference"}
+
+SOLUTION UPDATE Clusterrole and RoleBinding as shown in the ingress-controller-alb.yaml then apply the command kubectl rollout restart deployment aws-load-balancer-controller -n kube-system
+
+Issue	Missing RBAC for leases
+Fix	Add correct ClusterRole and ClusterRoleBinding for the controller
+Location	kube-system namespace, service account aws-load-balancer-controller
+Outcome	Controller will be able to perform leader election and run normall
